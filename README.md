@@ -36,7 +36,7 @@ streamlit run app.py
 
 ## 🌐 Démo en ligne
 
-👉 [Lien de la démo Streamlit Cloud à ajouter ici]
+👉 (https://rag-document-appgit-xakwfynacexfzvzcnpkbex.streamlit.app/)
 
 ## 📂 Structure du projet
 
