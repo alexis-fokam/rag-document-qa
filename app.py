@@ -1,8 +1,8 @@
 """
 app.py
 ------
-Interface Streamlit du projet RAG Document Q&A.
-Permet d'uploader un PDF/CSV et de poser des questions dessus.
+Streamlit interface for the RAG Document Q&A project.
+Lets you upload a PDF/CSV and ask questions about it.
 """
 
 import os
@@ -17,33 +17,33 @@ from rag_pipeline import (
     generate_answer,
 )
 
-# Charge les variables d'environnement depuis .env (en local uniquement ;
-# sur Streamlit Cloud, on utilise st.secrets à la place, voir plus bas)
+# Load environment variables from .env (local use only;
+# on Streamlit Cloud, st.secrets is used instead, see below)
 load_dotenv()
 
 st.set_page_config(page_title="RAG Document Q&A", page_icon="📄", layout="centered")
 
 st.title("📄 RAG Document Q&A")
 st.caption(
-    "Uploade un PDF ou un CSV, pose tes questions, et obtiens des réponses "
-    "sourcées basées uniquement sur le contenu du document."
+    "Upload a PDF or CSV, ask your questions, and get answers "
+    "sourced exclusively from the document's content."
 )
 
-# --- Récupération de la clé API ---
-# En local : elle vient du fichier .env
-# Sur Streamlit Cloud : elle vient de st.secrets (configuré dans les settings de l'app)
+# --- API key retrieval ---
+# Locally: it comes from the .env file
+# On Streamlit Cloud: it comes from st.secrets (configured in the app settings)
 google_api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY", None)
 
 if not google_api_key:
     st.error(
-        "⚠️ Clé API Google manquante. Ajoute GOOGLE_API_KEY dans ton fichier .env "
-        "(en local) ou dans les Secrets Streamlit Cloud (en production)."
+        "⚠️ Missing Google API key. Add GOOGLE_API_KEY to your .env file "
+        "(locally) or to the Streamlit Cloud Secrets (in production)."
     )
     st.stop()
 
-# --- Initialisation de l'état de session ---
-# On garde le vectorstore en mémoire tant que l'utilisateur ne change pas de fichier,
-# pour éviter de re-calculer les embeddings à chaque question.
+# --- Session state initialization ---
+# We keep the vectorstore in memory as long as the user doesn't change files,
+# to avoid recomputing embeddings on every question.
 if "vectorstore" not in st.session_state:
     st.session_state.vectorstore = None
 if "current_file" not in st.session_state:
@@ -53,32 +53,32 @@ if "chunk_count" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- Barre latérale : upload et infos sur le document ---
+# --- Sidebar: upload and document info ---
 with st.sidebar:
     st.header("📁 Document")
-    uploaded_file = st.file_uploader("Choisis un fichier PDF ou CSV", type=["pdf", "csv"])
+    uploaded_file = st.file_uploader("Choose a PDF or CSV file", type=["pdf", "csv"])
 
     if uploaded_file is not None and st.session_state.current_file != uploaded_file.name:
-        with st.spinner("📚 Lecture et indexation du document en cours..."):
+        with st.spinner("📚 Reading and indexing the document..."):
             documents = load_document(uploaded_file)
             chunks = split_documents(documents)
             st.session_state.vectorstore = build_vectorstore(chunks, google_api_key)
             st.session_state.current_file = uploaded_file.name
             st.session_state.chunk_count = len(chunks)
-            st.session_state.chat_history = []  # reset de l'historique sur nouveau doc
-        st.success(f"✅ {len(chunks)} morceaux de texte indexés.")
+            st.session_state.chat_history = []  # reset history on new document
+        st.success(f"✅ {len(chunks)} text chunks indexed.")
 
     if st.session_state.current_file:
         st.divider()
-        st.caption("📄 Document actif")
+        st.caption("📄 Active document")
         st.markdown(f"**{st.session_state.current_file}**")
-        st.caption(f"🧩 {st.session_state.chunk_count} morceaux indexés")
+        st.caption(f"🧩 {st.session_state.chunk_count} chunks indexed")
 
-        if st.session_state.chat_history and st.button("🗑️ Effacer la conversation", use_container_width=True):
+        if st.session_state.chat_history and st.button("🗑️ Clear conversation", use_container_width=True):
             st.session_state.chat_history = []
             st.rerun()
 
-# --- Zone de conversation ---
+# --- Chat area ---
 if st.session_state.vectorstore is not None:
     for exchange in st.session_state.chat_history:
         with st.chat_message("user"):
@@ -89,12 +89,12 @@ if st.session_state.vectorstore is not None:
                 for source in exchange["sources"]:
                     st.caption(f"**Page {source['page']}** — {source['excerpt']}")
 
-    question = st.chat_input("Pose ta question sur le document...")
+    question = st.chat_input("Ask a question about the document...")
     if question:
         with st.chat_message("user"):
             st.write(question)
         with st.chat_message("assistant", avatar="📄"):
-            with st.spinner("🔍 Recherche dans le document et génération de la réponse..."):
+            with st.spinner("🔍 Searching the document and generating the answer..."):
                 relevant_chunks = get_relevant_chunks(st.session_state.vectorstore, question)
                 result = generate_answer(question, relevant_chunks, google_api_key)
             st.write(result["answer"])
@@ -106,4 +106,4 @@ if st.session_state.vectorstore is not None:
             {"question": question, "answer": result["answer"], "sources": result["sources"]}
         )
 else:
-    st.info("👈 Commence par uploader un document dans la barre latérale pour pouvoir poser des questions.")
+    st.info("👈 Start by uploading a document in the sidebar to ask questions.")

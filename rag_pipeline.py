@@ -42,7 +42,7 @@ def load_document(uploaded_file) -> List[Document]:
     elif suffix.lower() == ".csv":
         loader = CSVLoader(tmp_path)
     else:
-        raise ValueError(f"Format non supporté : {suffix}. Utilise un PDF ou un CSV.")
+        raise ValueError(f"Unsupported format: {suffix}. Use a PDF or a CSV.")
 
     documents = loader.load()
     os.remove(tmp_path)  # Nettoyage du fichier temporaire
@@ -104,16 +104,16 @@ def generate_answer(question: str, relevant_chunks: List[Document], google_api_k
         for doc in relevant_chunks
     )
 
-    prompt = f"""Tu es un assistant qui répond UNIQUEMENT à partir du contexte fourni ci-dessous.
-Si la réponse ne se trouve pas dans le contexte, dis clairement "Je ne trouve pas cette information dans le document."
-Ne jamais inventer d'information qui n'est pas dans le contexte.
+    prompt = f"""You are an assistant that answers ONLY using the context provided below.
+If the answer is not in the context, clearly say "I can't find this information in the document."
+Never invent information that isn't in the context.
 
-CONTEXTE :
+CONTEXT:
 {context_text}
 
-QUESTION : {question}
+QUESTION: {question}
 
-RÉPONSE (en français, claire et concise) :"""
+ANSWER (in English, clear and concise):"""
 
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
