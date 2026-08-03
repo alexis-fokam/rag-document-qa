@@ -84,7 +84,9 @@ if st.session_state.vectorstore is not None:
     for exchange in reversed(st.session_state.chat_history):
         st.markdown(f"**❓ {exchange['question']}**")
         st.write(exchange["answer"])
-        st.caption(f"📎 Sources : {exchange['sources']}")
+        with st.expander(f"📎 Sources ({len(exchange['sources'])})"):
+            for source in exchange["sources"]:
+                st.caption(f"**Page {source['page']}** — {source['excerpt']}")
         st.divider()
 else:
     st.info("👆 Commence par uploader un document pour pouvoir poser des questions.")

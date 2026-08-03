@@ -72,10 +72,15 @@ def build_vectorstore(chunks: List[Document], google_api_key: str) -> Chroma:
         model="models/gemini-embedding-001",
         google_api_key=google_api_key,
     )
+    # Client persistant sur disque (dossier temporaire) : le client "ephemeral"
+    # en mémoire de Chroma perd ses données quand Streamlit change de thread
+    # entre deux interactions (bug connu : "no such table: collections").
+    persist_directory = tempfile.mkdtemp(prefix="chroma_")
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
         collection_name="rag_qa_session",
+        persist_directory=persist_directory,
     )
     return vectorstore
 
@@ -118,7 +123,10 @@ RÉPONSE (en français, claire et concise) :"""
     response = llm.invoke(prompt)
 
     sources = [
-        doc.metadata.get("page", doc.metadata.get("row", "?"))
+        {
+            "page": doc.metadata.get("page", doc.metadata.get("row", "?")),
+            "excerpt": doc.page_content[:200].strip() + ("..." if len(doc.page_content) > 200 else ""),
+        }
         for doc in relevant_chunks
     ]
 
